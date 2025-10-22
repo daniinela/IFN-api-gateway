@@ -1,9 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const axios = require('axios');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import axios from 'axios';
+import dotenv from 'dotenv';
+import services from './config/services.js';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -23,12 +26,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Configuración de servicios
-const services = {
-  usuarios: 'http://localhost:3001',
-  brigadas: 'http://localhost:3002', 
-  conglomerados: 'http://localhost:3003'
-};
 
 // Middleware de proxy manual
 app.use(async (req, res, next) => {
