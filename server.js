@@ -9,19 +9,20 @@ import {
   getBrigadistaConNombre,
   getBrigadistasConNombres,
   getBrigadistasDeBrigadaConNombres
-} from './orquestadores/brigadasorquestador.js';
+} from './orquestadores/brigadasorquestador.js';  
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Middlewares básicos
+
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json());  
 
 // Rate limiting
 const limiter = rateLimit({
@@ -30,54 +31,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-
-// Middleware de proxy manual
-app.use(async (req, res, next) => {
-  if (!req.path.startsWith('/api/')) return next();
-  
-  try {
-    const path = req.path;
-    let targetService = '';
-    let targetUrl = '';
-
-    if (path.startsWith('/api/auth') || path.startsWith('/api/usuarios')) {
-      targetService = services.usuarios;
-    } else if (path.startsWith('/api/brigadistas') || path.startsWith('/api/brigadas')) {
-      targetService = services.brigadas;
-    } else if (path.startsWith('/api/conglomerados') || path.startsWith('/api/weather')) {
-      targetService = services.conglomerados;
-    } else {
-      return res.status(404).json({ 
-        error: 'Ruta no encontrada en el gateway',
-        availableRoutes: [
-          '/api/auth/*', '/api/usuarios/*', 
-          '/api/brigadistas/*', '/api/brigadas/*',
-          '/api/conglomerados/*', '/api/weather/*'
-        ]
-      });
-    }
-
-    targetUrl = `${targetService}${path}`;
-    console.log(`📡 Proxy: ${req.method} ${path} -> ${targetUrl}`);
-
-    const response = await axios({
-      method: req.method,
-      url: targetUrl,
-      headers: { ...req.headers, host: new URL(targetService).host },
-      data: req.body,
-      validateStatus: null
-    });
-    
-    res.status(response.status).set(response.headers).send(response.data);
-
-  } catch (error) {
-    console.error('❌ Error en gateway:', error.message);
-    if (error.code === 'ECONNREFUSED') {
-      return res.status(503).json({ error: 'Servicio no disponible' });
-    }
-    res.status(500).json({ error: 'Error interno del gateway', message: error.message });
-  }
-});
 
 // Ruta de salud del gateway
 app.get('/health', (req, res) => {
@@ -89,7 +42,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-//Usar /health normal
+app.get('/', (req, res) => {
+  res.json({
+    message: '🚀 API Gateway - Sistema de Brigadas Agroambientales',
+    version: '1.0.0',
+    services: Object.keys(services)
+  });
+});
+
+// Status de servicios
 app.get('/api/services/status', async (req, res) => {
   const status = {};
   const checks = [];
@@ -97,7 +58,6 @@ app.get('/api/services/status', async (req, res) => {
   for (const [name, url] of Object.entries(services)) {
     try {
       const startTime = Date.now();
-      // ✅ CAMBIADO: Usar /health normal
       const response = await axios.get(`${url}/health`, { timeout: 5000 });
       const responseTime = Date.now() - startTime;
       
@@ -128,23 +88,101 @@ app.get('/api/services/status', async (req, res) => {
   });
 });
 
-app.get('/', (req, res) => {
-  res.json({
-    message: '🚀 API Gateway - Sistema de Brigadas Agroambientales',
-    version: '1.0.0',
-    services: Object.keys(services)
-  });
+//Aca ya traigo todas las rutas de orquestacion
+
+// Obtener todos los brigadistas con nombres
+app.get('/api/orchestrator/brigadistas', async (req, res) => {
+  try {
+    const brigadistas = await getBrigadistasConNombres();
+    res.json(brigadistas);
+  } catch (error) {
+    console.error('Error en orquestador:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtener un brigadista con nombre completo (DESPUÉS de /brigadistas para evitar conflicto)
+app.get('/api/orchestrator/brigadistas/:id', async (req, res) => {
+  try {
+    const brigadista = await getBrigadistaConNombre(req.params.id);
+    res.json(brigadista);
+  } catch (error) {
+    console.error('Error en orquestador:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtener brigadistas de una brigada con nombres
+app.get('/api/orchestrator/brigadas/:id/brigadistas', async (req, res) => {
+  try {
+    const brigadistas = await getBrigadistasDeBrigadaConNombres(req.params.id);
+    res.json(brigadistas);
+  } catch (error) {
+    console.error('Error en orquestador:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+app.use(async (req, res, next) => {
+  if (!req.path.startsWith('/api/')) return next();
+  
+  try {
+    const path = req.path;
+    let targetService = '';
+    let targetUrl = '';
+
+    if (path.startsWith('/api/auth') || path.startsWith('/api/usuarios')) {
+      targetService = services.usuarios;
+    } else if (path.startsWith('/api/brigadistas') || path.startsWith('/api/brigadas')) {
+      targetService = services.brigadas;
+    } else if (path.startsWith('/api/conglomerados') || path.startsWith('/api/weather')) {
+      targetService = services.conglomerados;
+    } else {
+      return res.status(404).json({ 
+        error: 'Ruta no encontrada en el gateway',
+        availableRoutes: [
+          '/api/auth/*', '/api/usuarios/*', 
+          '/api/brigadistas/*', '/api/brigadas/*',
+          '/api/conglomerados/*', '/api/weather/*',
+          '/api/orchestrator/*'
+        ]
+      });
+    }
+
+    targetUrl = `${targetService}${path}`;
+    console.log(`📡 Proxy: ${req.method} ${path} -> ${targetUrl}`);
+
+    const response = await axios({
+      method: req.method,
+      url: targetUrl,
+      headers: { ...req.headers, host: new URL(targetService).host },
+      data: req.body,
+      validateStatus: null
+    });
+    
+    res.status(response.status).set(response.headers).send(response.data);
+
+  } catch (error) {
+    console.error('❌ Error en gateway:', error.message);
+    if (error.code === 'ECONNREFUSED') {
+      return res.status(503).json({ error: 'Servicio no disponible' });
+    }
+    res.status(500).json({ error: 'Error interno del gateway', message: error.message });
+  }
 });
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada', path: req.path });
 });
 
+//Aca inicio el super servidor
 app.listen(PORT, () => {
   console.log(`=================================`);
   console.log(`API Gateway iniciado en puerto ${PORT}`);
   console.log(`Health: http://localhost:${PORT}/health`);
   console.log(`Services Status: http://localhost:${PORT}/api/services/status`);
+  console.log(`Orchestrator: http://localhost:${PORT}/api/orchestrator/*`);
   console.log(`Servicios configurados:`, Object.keys(services));
   console.log(`=================================`);
 });
