@@ -5,7 +5,11 @@ import rateLimit from 'express-rate-limit';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import services from './config/services.js';
-
+import {
+  getBrigadistaConNombre,
+  getBrigadistasConNombres,
+  getBrigadistasDeBrigadaConNombres
+} from './orquestadores/brigadasorquestador.js';
 dotenv.config();
 
 const app = express();
