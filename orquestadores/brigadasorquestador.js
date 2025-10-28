@@ -5,18 +5,24 @@ const SERVICES = {
   brigadas: process.env.BRIGADAS_SERVICE_URL || 'http://localhost:3002'
 };
 
-export async function getBrigadistaConNombre(brigadista_id) {
+export async function getBrigadistaConNombre(brigadista_id, token) {  // ← Recibe token
   try {
     const brigadistaRes = await axios.get(
       `${SERVICES.brigadas}/api/brigadistas/${brigadista_id}`,
-      { timeout: 5000 }
+      { 
+        timeout: 5000,
+        headers: { Authorization: `Bearer ${token}` }  // ← Pasa el token
+      }
     );
     
     const brigadista = brigadistaRes.data;
     
     const usuarioRes = await axios.get(
       `${SERVICES.usuarios}/api/usuarios/${brigadista.user_id}`,
-      { timeout: 5000 }
+      { 
+        timeout: 5000,
+        headers: { Authorization: `Bearer ${token}` }  // ← Pasa el token
+      }
     );
     
     const usuario = usuarioRes.data;
@@ -33,6 +39,9 @@ export async function getBrigadistaConNombre(brigadista_id) {
     }
     if (error.response?.status === 404) {
       throw new Error('Brigadista o usuario no encontrado');
+    }
+    if (error.response?.status === 401) {
+      throw new Error('No autorizado: Token inválido o expirado');
     }
     throw new Error(`Error en orquestación: ${error.message}`);
   }
