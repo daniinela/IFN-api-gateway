@@ -90,27 +90,24 @@ app.get('/api/services/status', async (req, res) => {
 
 //Aca ya traigo todas las rutas de orquestacion
 
-// Obtener todos los brigadistas con nombres
-app.get('/api/orchestrator/brigadistas', async (req, res) => {
-  try {
-    const brigadistas = await getBrigadistasConNombres();
-    res.json(brigadistas);
-  } catch (error) {
-    console.error('Error en orquestador:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
 
-// Obtener un brigadista con nombre completo (DESPUÉS de /brigadistas para evitar conflicto)
 app.get('/api/orchestrator/brigadistas/:id', async (req, res) => {
   try {
-    const brigadista = await getBrigadistaConNombre(req.params.id);
+    const token = req.headers.authorization?.replace('Bearer ', '');  // ← Extrae token
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Token requerido' });
+    }
+    
+    const brigadista = await getBrigadistaConNombre(req.params.id, token);  // ← Pasa token
     res.json(brigadista);
   } catch (error) {
     console.error('Error en orquestador:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 // Obtener brigadistas de una brigada con nombres
 app.get('/api/orchestrator/brigadas/:id/brigadistas', async (req, res) => {
