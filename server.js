@@ -183,3 +183,8 @@ app.listen(PORT, () => {
   console.log(`Servicios configurados:`, Object.keys(services));
   console.log(`=================================`);
 });
+export default {
+  usuarios: "https://ifn-usuarios-service.onrender.com/",
+  brigadas: "https://ifn-brigadas-service.onrender.com/",
+  conglomerados: "https://ifn-conglomerados-service.onrender.com/"
+};
