@@ -1,15 +1,15 @@
-// Configuración de los microservicios - VERSIÓN CORREGIDA
+// config/services.js
 const services = {
   usuarios: {
-    target: 'http://localhost:3001',
+    target: 'https://ifn-usuarios-service.onrender.com',
     endpoints: ['/api/auth', '/api/usuarios']
   },
   brigadas: {
-    target: 'http://localhost:3002', 
+    target: 'https://ifn-brigadas-service.onrender.com',
     endpoints: ['/api/brigadistas', '/api/brigadas']
   },
   conglomerados: {
-    target: 'http://localhost:3003',
+    target: 'https://ifn-conglomerados-service.onrender.com',
     endpoints: ['/api/conglomerados', '/api/weather']
   }
 };
