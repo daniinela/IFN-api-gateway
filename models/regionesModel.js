@@ -1,4 +1,4 @@
-// geo-service/models/regionesModel.js
+// ========== geo-service/models/regionesModel.js ==========
 import supabase from '../config/database.js';
 
 class RegionesModel {
@@ -7,7 +7,12 @@ class RegionesModel {
       .from('regiones')
       .select('*')
       .order('nombre', { ascending: true });
-    if (error) throw error;
+    
+    if (error) {
+      console.error('❌ Error en RegionesModel.getAll:', error);
+      throw error;
+    }
+    
     return data || [];
   }
 
@@ -17,7 +22,12 @@ class RegionesModel {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    if (error) throw error;
+    
+    if (error) {
+      console.error('❌ Error en RegionesModel.getById:', error);
+      throw error;
+    }
+    
     return data;
   }
 }
