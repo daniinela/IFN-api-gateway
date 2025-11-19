@@ -64,12 +64,24 @@ class GeoController {
     try {
       const { id } = req.params;
       console.log(`📍 Obteniendo departamento ID: ${id}`);
+      
+      // ✅ VERIFICAR QUE EL MÉTODO EXISTE
+      if (typeof DepartamentosModel.getById !== 'function') {
+        console.error('❌ CRÍTICO: DepartamentosModel.getById NO ES UNA FUNCIÓN');
+        console.error('Métodos disponibles:', Object.getOwnPropertyNames(DepartamentosModel));
+        return res.status(500).json({ 
+          error: 'Error interno: Método getById no disponible',
+          metodos_disponibles: Object.getOwnPropertyNames(DepartamentosModel)
+        });
+      }
+      
       const departamento = await DepartamentosModel.getById(id);
       
       if (!departamento) {
         return res.status(404).json({ error: 'Departamento no encontrado' });
       }
       
+      console.log('✅ Departamento encontrado:', departamento.nombre);
       res.json(departamento);
     } catch (error) {
       console.error('❌ Error en getDepartamentoById:', error.message);
